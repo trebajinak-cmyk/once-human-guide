@@ -1,0 +1,34 @@
+{
+  "summary": "First test run – both backend and frontend tested end-to-end. Backend: 30/30 pytest tests pass (meta, items for all 5 categories, item details incl. SOCR + Lonewolf set_effects, image proxy, news list/detail, guides list/detail for shrapnel with videos+wiki articles, translate cs, chat SSE streaming + history + delete, bridge manifest/search/auth 401/authorized ask, POST /api/sync). Frontend (390x844 mobile viewport): Home hero with latest-patch-card, Codex (search 'socr' returns 2 items, filter chips visible, 83 záznamů count), Item detail legendary card renders beautifully (gold frame, cinematic image, rarity ribbon 'LEGENDARY', parchment stats panel with Weight/Durability/DMG, Czech auto-translation 'Překládám do češtiny…' → translated summary, 'Zeptat se AI' button), armor set Lonewolf renders with set effects, Guides list with Základy/Combat/World groups and Video/Wiki badges, Guide detail (shrapnel) shows YouTube video thumbnails on web (correct – native-only playback), verified wiki article with translate button, AI assistant streams Czech answer in ~2s with 6 sources (ACS12, AUG, AWS.338…), News list with Vše/Patch filter chips, Settings shows Čeština/English toggle, sync status (last sync 18.10.2026), AI Bridge section with Base URL/OpenAPI/X-Bridge-Token (ohg-bridge-7f3k9q2m)/Export JSON copy buttons. All testIDs present (60+). No deprecated expo packages, no red-screen errors, no PAGEERROR events.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend_api.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Code quality is high: BaseDocument uses PyObjectId BeforeValidator to serialize ObjectId; CARD_PROJ/ITEM_PROJ explicitly exclude _id → no ObjectId leakage.",
+    "server.py is 413 lines, well-structured. wiki.py 343 lines (parser), fine.",
+    "Caching layer in db.cache with graceful fallback (serves stale on upstream failure) – excellent for live wiki/news.",
+    "Streaming SSE uses proper media_type=text/event-stream and X-Accel-Buffering: no header – correctly disables proxy buffering.",
+    "Bridge token auth via _check() strips 'Bearer ' prefix (optional support) and 401s on mismatch – working.",
+    "Minor nit (non-blocking): /api/meta count for armor_mods shows 57 in counts vs 58 in last sync (one stale item). Not a bug – happens between syncs."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py (created)",
+    "/app/backend/tests/test_backend_api.py (created)"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "No seed data created. Chat test session (TEST_sess_*) is cleaned up at end of test via DELETE /api/chat/{session_id}. Translation cache entries (TEST_tr_*) remain but are harmless and prefixed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend regression suite lives at /app/backend/tests/test_backend_api.py (30 tests, pytest-xdist safe, ~11s cold). Uses EXPO_PUBLIC_BACKEND_URL from backend .env (NOT a default literal). Known external deps: once-human.fandom.com (wiki sync), Steam news API, YouTube scrape, Emergent LLM (Claude). First call to a new guide can take 20-40s because of live wiki+YT fetch; subsequent calls use db.cache. Video objects use 'video_id' key (not 'id').",
+  "rca_of_issue": "N/A – no bugs found."
+}

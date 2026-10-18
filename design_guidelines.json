@@ -1,0 +1,178 @@
+{
+  "app_name": "Once Human Guide",
+  "personality": "6 Glass / Luxe DARK (with Editorial/Gaming filigree accents)",
+  "personality_one_liner": "A premium, cinematic post-apocalyptic compendium that feels like an ancient, high-tech survivor's codex.",
+  "color": {
+    "surface": "#0B0C10",
+    "onSurface": "#F0EBE1",
+    "surfaceSecondary": "#1A1C23",
+    "onSurfaceSecondary": "#E5E1D8",
+    "surfaceTertiary": "#262A35",
+    "onSurfaceTertiary": "#C8C4BD",
+    "surfaceInverse": "#E8DECB",
+    "onSurfaceInverse": "#1A1A1A",
+    "muted": "#8A8D96",
+    "brand": "#C2A46A",
+    "onBrand": "#1A150B",
+    "brandPrimary": "#C2A46A",
+    "onBrandPrimary": "#1A150B",
+    "brandSecondary": "#8C182A",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#3E3725",
+    "onBrandTertiary": "#E8DECB",
+    "success": "#3E7A4A",
+    "onSuccess": "#FFFFFF",
+    "warning": "#D1943A",
+    "onWarning": "#1A1A1A",
+    "error": "#B03838",
+    "onError": "#FFFFFF",
+    "info": "#4A728A",
+    "onInfo": "#FFFFFF",
+    "border": "#262933",
+    "borderStrong": "#5C523A",
+    "divider": "#1A1C23",
+    "rarityCommon": "#9BA0A6",
+    "rarityRare": "#4D88D9",
+    "rarityEpic": "#9A58E8",
+    "rarityLegendary": "#D6B560"
+  },
+  "typography": {
+    "displayFontFamily": "CormorantGaramond",
+    "textFontFamily": "DMSans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous spacing on cinematic screens, tight and tabular spacing within the parchment stats panels. Do not use random pixel offsets.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": 0,
+  "navigation": "bottom_tabs",
+  "icon_set": "MaterialCommunityIcons",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Use heavy glass effect over misty/apocalyptic background photos for Home and Dashboard layers",
+      "Use dark tinted glass behind text to ensure readability",
+      "Layer glass headers above scrolling content"
+    ],
+    "dont's": [
+      "Don't use glassmorphism on the parchment (surfaceInverse) info panels, those should remain solid",
+      "Don't blur the hero item images"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home",
+      "purpose": "Dashboard highlighting current patch notes, latest news, and quick navigation to categories.",
+      "states": {
+        "loading": "Dark misty background with a gold spinning diamond or crosshair.",
+        "empty": "No news available, display 'Awaiting transmission...' text.",
+        "error": "Error fetching news. Display 'Signal Lost' with retry button."
+      },
+      "layout": "Hero image banner with a gradient-to-dark scrim. Glass-layered cards for latest Patch Notes and News (Steam feed placeholders). Below, a 2-column grid of quick links (Weapons, Armor, Mods, Deviations) utilizing brandTertiary tinted backgrounds."
+    },
+    {
+      "name": "Codex",
+      "purpose": "Database browser for items featuring search and rarity filters.",
+      "states": {
+        "loading": "Skeleton grid over the dark surface.",
+        "empty": "No items match filters. Display 'Database empty'.",
+        "error": "Connection error."
+      },
+      "layout": "Top sticky search bar and a horizontally scrolling row of filter chips (Type, Rarity). The main content is a 2-column grid of item cards. Each card has a subtle border matching its rarity (e.g., rarityLegendary for gold) and a dark glass background. Hero images are clipped neatly inside."
+    },
+    {
+      "name": "ItemDetail",
+      "purpose": "The 'Legendary Card' view - ornate, detailed specs and lore for a selected weapon or armor.",
+      "states": {
+        "loading": "Centered loading spinner.",
+        "empty": "N/A",
+        "error": "Failed to load item data."
+      },
+      "layout": "A scrollable cinematic view. Top: Full-bleed weapon artwork overlaid on a dark misty background with a red/magenta anomaly glow (brandSecondary). The frame has a subtle gold (brandPrimary) ornate border. A gold ribbon below the image spells the rarity (e.g., 'LEGENDARY'). Bottom half: A solid panel using `surfaceInverse` (Parchment beige) with dark `onSurfaceInverse` text. This panel includes a dark serif subtitle, a lore paragraph, an italicized quote, and a highly structured stats table with small icons (ammo type, damage, fire rate) and right-aligned values."
+    },
+    {
+      "name": "Assistant",
+      "purpose": "AI chat interface for game mechanics, tips, and queries.",
+      "states": {
+        "loading": "Spinner",
+        "empty": "Initial greeting message from the AI orb.",
+        "error": "Failed to send message."
+      },
+      "layout": "Chat interface. Top header with 'AI Guide'. Dark surface background with glowing AI orb watermark. User messages in brandTertiary bubbles, AI responses in surfaceSecondary glass bubbles. Bottom sticky input."
+    },
+    {
+      "name": "Guides",
+      "purpose": "List of game mechanics tutorials with embedded YouTube video links.",
+      "states": {
+        "loading": "Skeleton list",
+        "empty": "No guides found.",
+        "error": "Failed to load guides."
+      },
+      "layout": "Vertical list of large cards. Each card has a video thumbnail with a play icon overlay, title, and a short summary of the tutorial. Using glass cards on top of a dark post-apocalyptic city background."
+    }
+  ],
+  "images": {
+    "home_bg": {
+      "url": "https://images.unsplash.com/photo-1630695230041-8909e3204778?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MjJ8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbWlzdHklMjBmb3Jlc3R8ZW58MHx8fHwxNzkyMzM5NTU1fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Dark misty forest background"
+    },
+    "weapon_placeholder": {
+      "url": "https://images.pexels.com/photos/17674653/pexels-photo-17674653.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Cinematic futuristic weapon/character artwork"
+    },
+    "guides_bg": {
+      "url": "https://images.unsplash.com/photo-1704893287279-7292d4285ff8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwxfHxwb3N0JTIwYXBvY2FseXB0aWMlMjBjaXR5fGVufDB8fHx8MTc5MjMzOTU1NXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Post apocalyptic city sunset"
+    },
+    "ai_avatar": {
+      "url": "https://images.pexels.com/photos/15021360/pexels-photo-15021360.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Glowing abstract AI orb"
+    }
+  },
+  "haptics": {
+    "tab_press": "light",
+    "filter_chip_press": "selection",
+    "item_card_press": "medium",
+    "send_message": "medium",
+    "video_play": "heavy"
+  },
+  "instructions_to_main_agent": [
+    "IMPLEMENT THE 'LEGENDARY CARD' EXACTLY AS REQUESTED: On the ItemDetail screen, use a full-bleed hero image of the weapon over a dark background. Below the image, render a gold rarity ribbon banner. Below that, MUST use the `surfaceInverse` (Parchment beige) color for the stats and lore container, with `onSurfaceInverse` (Dark text). Use the `CormorantGaramond` serif font for the weapon title and lore/quote, and `DMSans` for the tabular stats.",
+    "Add explicit rarity colors to the theme object and use them for item card borders/ribbons: Common (#9BA0A6), Rare (#4D88D9), Epic (#9A58E8), Legendary (#D6B560).",
+    "Ensure Settings functionality (Language toggle CZ/EN) is placed either as a top-right header icon on the Home tab or within the Assistant tab's header, keeping tabs max to 4.",
+    "In the Codex screen, use MaterialCommunityIcons for stats (e.g., 'pistol' for ammo type, 'crosshairs' for accuracy, 'chart-line' for stability) to mimic the game's UI.",
+    "Use expo-font to load 'CormorantGaramond_500Medium' and 'DMSans_400Regular' or 'DMSans_500Medium'. Do not use heavy font weights.",
+    "Mock the 'Steam news' feed and 'Wiki database' data using the provided placeholder images until actual APIs are integrated."
+  ]
+}
