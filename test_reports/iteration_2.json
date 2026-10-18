@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 2 end-to-end regression for new features: build planner, weapon compare, interactive map, Discord share. Backend: 34/34 pytest tests pass (30 iteration-1 regression + 4 new in test_builds_and_map.py). Verified: GET /api/builds/creators returns 20 videos from Anestic+Doomeris with video_id/title/channel/published; POST /api/builds/generate {goal,keyword,lang:'cs'} returns full build in ~35s with resolved refs (weapon/armor×6/weapon_mod/armor_mods×6/deviation each with slug+title+image+rarity), rotation, tips, creator_refs with ytimg thumbnail URLs; POST /api/builds/review returns Czech markdown review (>20 chars); GET /api/map returns Nalcott map (image URL on wikia CDN, 12 categories with non-zero counts, 131 markers all with x,y in 0..1). Frontend (390x844 mobile viewport): Home shows Nástroje section with tool-builds/tool-compare/tool-map; /builds empty state + builds-new-button + builds-ai-button render; editor exposes slot-weapon, slot-weapon-mod, slot-deviation, slot-armor-Helmet/Mask/Top/Gloves/Bottoms/Shoes, slot-armor-mod-Helmet…; item-picker opens, search 'socr' returns 2 results, pick-socr-the-last-valor works; picking Lonewolf Set in Helmet+Mask shows active-set-bonuses panel; build-save-button saves (TEST build appears in list after back); reopening build-card-<id> loads editor; build-review-button returns full 2880-char Czech review with rating 4/10 and concrete swap suggestions in <60s; build-delete-button removes it and list goes back to empty. /builds/ai shows 20 creator videos row with Anestic thumbnails, 12 ai-keyword chips (Auto/Shrapnel/Burn/Frost Vortex/…), ai-goal-input and ai-generate-button present. /compare?a=socr-the-last-valor&b=kvd-boom-boom loads both items (SOCR Assault Rifle vs KVD LMG), 11 compare-row rows with better values highlighted in green (e.g. SOCR Magazine 100 vs KVD 30 highlighted on SOCR side, Weight 1.5 vs 2.0 highlighted on SOCR side), compare-swap button visible between them, compare-pick-a and compare-pick-b open ItemPicker. From /item/weapons/socr-the-last-valor the item-compare-button navigates to /compare?a=socr-the-last-valor (A prefilled, B empty picker). item-share-button present and tappable on web (Share.share fallback – no crash, remains on detail screen). /map renders map-canvas with Nalcott map image, 12 map-cat-* category chips, 131 map-marker-<id> pins, map-zoom-in/map-zoom-out visible; tapping a pin shows map-marker-card with wiki button, ask-ai button and close button. Regression: all iteration-1 features (codex, item detail with legendary card + Czech auto-translation, guides, AI chat SSE, news, settings, AI bridge) still working. No deprecated expo packages, no red-screen errors, no PAGEERROR events, no console errors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend_api.py",
+    "/app/backend/tests/test_builds_and_map.py",
+    "/app/backend/tests/conftest.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_builds.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "builds.py (119 lines) and server.py (507 lines) remain well-structured; builds endpoints added cleanly under /api without leaking Mongo _id (ITEM_PROJ/CARD_PROJ excludes _id, catalog() uses explicit projection).",
+    "Build generate validates slugs via _valid_slugs() so AI hallucinated items are dropped (nulled refs). Nice defensive design.",
+    "Map data has 24h caching (cached('map_nalcott', 12*60)); first call ~15s due to live wiki fetch of ~140 image URLs, subsequent calls instant.",
+    "Compare screen correctly uses a search param resolver and only shows compare-table rows once both items are loaded; initial first-paint shows empty A column briefly (~1s) until useQuery resolves – acceptable UX.",
+    "AI review response time ~22s with Claude Sonnet; acceptable for a one-tap action with a loading state on the button."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_builds_and_map.py (created – 4 new pytest tests)"
+  ],
+  "success_rate": {"backend": "100% (34/34)", "frontend": "100%"},
+  "seed_data_creation": "No DB seed data created. Browser localStorage builds are ephemeral per browser context. All test builds (TEST Lonewolf Shrapnel, TEST Shrapnel build) deleted via UI before finish. Translation cache entries TEST_tr_* are harmless and remain.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend regression lives in /app/backend/tests/ (test_backend_api.py + test_builds_and_map.py). Run: cd /app/backend && pytest tests/ -v. Cold run ~58s; builds+map tests are the slow ones (~34s combined) due to LLM calls (generate ~30s, review ~20s). Browser automation uses fresh context each call → AsyncStorage saved_builds is wiped between invocations; always chain Save→Review→Delete in the same page.on() script. Compare screen testIDs: compare-pick-a/b open ItemPicker, compare-row-<label>, compare-swap. Map testIDs: map-canvas, map-cat-<id> (via ChipRow testPrefix), map-marker-<id>, map-marker-card, map-marker-wiki, map-marker-ask-ai, map-zoom-in/out. Builds list uses build-card-<id> not build-row-.",
+  "rca_of_issue": "N/A – no bugs found in iteration 2."
+}

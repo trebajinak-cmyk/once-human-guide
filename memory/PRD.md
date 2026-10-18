@@ -19,6 +19,14 @@ AI assistant (Claude) + live news; embedded YouTube videos; real wiki images; Cz
 ## Implemented (2026-10-18)
 - All above; testing iteration 1: 30/30 backend, frontend all green
 
+## Iteration 2 (2026-10-18)
+- Build planner (local favourites, 6 armor slots + mods, active set bonuses, AI review), AI build generator using Anestic & Doomeris video descriptions as reference
+- Weapon compare with highlighted better stats
+- Interactive Nalcott map (131 wiki markers, category filter, pinch zoom)
+- Share card / build as image (react-native-view-shot + expo-sharing; native only, web falls back to text)
+- Testing iteration 2: 34/34 backend, frontend all green
+- docs/BASE44_INTEGRATION.md – workflow Emergent + GitHub + Base44
+
 ## Backlog
 - P1: Favourites / own build planner (weapon + armor + mods)
 - P1: Interactive map of locations

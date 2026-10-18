@@ -74,6 +74,48 @@ const STR = {
   read: { cs: "Číst", en: "Read" },
   patch: { cs: "PATCH", en: "PATCH" },
   quickAsk: { cs: "Rychlé otázky", en: "Quick questions" },
+  tools: { cs: "Nástroje", en: "Tools" },
+  builds: { cs: "Plánovač buildů", en: "Build planner" },
+  buildsSub: { cs: "Vlastní buildy a AI dle Anestic & Doomeris", en: "Custom builds & AI like Anestic & Doomeris" },
+  compare: { cs: "Porovnání zbraní", en: "Weapon compare" },
+  compareSub: { cs: "Dvě zbraně vedle sebe", en: "Two weapons side by side" },
+  map: { cs: "Interaktivní mapa", en: "Interactive map" },
+  mapSub: { cs: "Deviace, Crates, Silo, bossové", en: "Deviations, crates, silos, bosses" },
+  myBuilds: { cs: "Moje buildy", en: "My builds" },
+  newBuild: { cs: "Nový build", en: "New build" },
+  aiBuild: { cs: "AI build", en: "AI build" },
+  noBuilds: { cs: "Zatím žádné uložené buildy", en: "No saved builds yet" },
+  buildName: { cs: "Název buildu", en: "Build name" },
+  weapon: { cs: "Zbraň", en: "Weapon" },
+  weaponMod: { cs: "Weapon mod", en: "Weapon mod" },
+  armorSlots: { cs: "Armor (6 slotů)", en: "Armor (6 slots)" },
+  armorModsT: { cs: "Armor mody", en: "Armor mods" },
+  deviation: { cs: "Deviace", en: "Deviation" },
+  notes: { cs: "Poznámky", en: "Notes" },
+  save: { cs: "Uložit do oblíbených", en: "Save to favourites" },
+  saved: { cs: "Uloženo", en: "Saved" },
+  delete: { cs: "Smazat", en: "Delete" },
+  choose: { cs: "Vybrat", en: "Choose" },
+  activeSets: { cs: "Aktivní set bonusy", en: "Active set bonuses" },
+  aiReview: { cs: "AI hodnocení buildu", en: "AI build review" },
+  reviewing: { cs: "AI analyzuje build…", en: "AI is analysing…" },
+  generate: { cs: "Vygenerovat build", en: "Generate build" },
+  generating: { cs: "AI skládá build podle Anestic & Doomeris… (až 60 s)", en: "AI is crafting a build like Anestic & Doomeris… (up to 60 s)" },
+  goal: { cs: "Cíl (např. silo boss, solo, začátečník)", en: "Goal (e.g. silo boss, solo, beginner)" },
+  keyword: { cs: "Klíčový efekt", en: "Main keyword" },
+  creatorVideos: { cs: "Zdrojová videa tvůrců", en: "Creator source videos" },
+  rotation: { cs: "Rotace", en: "Rotation" },
+  tips: { cs: "Tipy", en: "Tips" },
+  substats: { cs: "Priorita substatů", en: "Substat priority" },
+  calibration: { cs: "Kalibrace", en: "Calibration" },
+  openInEditor: { cs: "Uložit a upravit", en: "Save & edit" },
+  share: { cs: "Sdílet kartu", en: "Share card" },
+  shareBuild: { cs: "Sdílet build", en: "Share build" },
+  pickWeapon: { cs: "Vyber zbraň", en: "Pick a weapon" },
+  higherBetter: { cs: "Zvýrazněna lepší hodnota", en: "Better value highlighted" },
+  creatorsNote: { cs: "AI se učí z popisů a časových os nejnovějších videí Anestic a Doomeris a používá jen ověřené položky z wiki.", en: "The AI learns from the descriptions & timestamps of the latest Anestic and Doomeris videos and uses only verified wiki items." },
+  mapNote: { cs: "Mapa Nalcott Island z Once Human Wiki. Přibliž dvěma prsty, klepni na značku.", en: "Nalcott Island map from the Once Human Wiki. Pinch to zoom, tap a marker." },
+  askAboutPlace: { cs: "Zeptat se AI na místo", en: "Ask the AI about it" },
 } as const;
 
 export type StrKey = keyof typeof STR;
@@ -84,7 +126,7 @@ const LangCtx = createContext<Ctx>({ lang: "cs", setLang: () => {}, t: (k) => ST
 export function LangProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>("cs");
   useEffect(() => {
-    storage.getItem("lang", "cs").then((v) => setLangState(v === "en" ? "en" : "cs"));
+    storage.getItem("lang", "cs" as string).then((v) => setLangState(v === "en" ? "en" : "cs"));
   }, []);
   const setLang = useCallback((l: Lang) => {
     setLangState(l);

@@ -38,7 +38,7 @@ export default function Assistant() {
 
   useEffect(() => {
     (async () => {
-      let sid = await storage.getItem("chat_session", "");
+      let sid = String((await storage.getItem("chat_session", "")) ?? "");
       if (!sid) {
         sid = `s-${newId()}`;
         await storage.setItem("chat_session", sid);

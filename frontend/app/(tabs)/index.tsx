@@ -16,6 +16,12 @@ import { ErrorState, Loading } from "@/src/components/States";
 const HERO = "https://images.unsplash.com/photo-1630695230041-8909e3204778?crop=entropy&cs=srgb&fm=jpg&q=80&w=1200";
 const CATS = ["weapons", "armor", "deviations", "weapon_mods", "armor_mods"] as const;
 
+const TOOLS = [
+  { key: "builds", sub: "buildsSub", href: "/builds", icon: "hammer-wrench" },
+  { key: "compare", sub: "compareSub", href: "/compare", icon: "scale-balance" },
+  { key: "map", sub: "mapSub", href: "/map", icon: "map-marker-radius-outline" },
+] as const;
+
 type Meta = { sync: { last_sync?: string }; counts: Record<string, number> };
 
 export default function Home() {
@@ -54,6 +60,22 @@ export default function Home() {
             <Text style={s.heroTitle2}>Field Guide</Text>
             <Text style={s.heroSub}>{t("heroSub")}</Text>
           </View>
+        </View>
+
+        <View style={s.section}>
+          <Text style={s.sectionLabel}>{t("tools")}</Text>
+          {TOOLS.map((tl, i) => (
+            <Animated.View key={tl.href} entering={FadeInDown.delay(60 * i).duration(400)}>
+              <Pressable testID={`tool-${tl.key}`} onPress={() => router.push(tl.href as any)} style={({ pressed }) => [s.tool, pressed && { opacity: 0.85 }]}>
+                <View style={s.toolIcon}><Icon name={tl.icon} size={24} color={colors.onBrandPrimary} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.quickTitle}>{t(tl.key)}</Text>
+                  <Text style={s.quickCount}>{t(tl.sub)}</Text>
+                </View>
+                <Icon name="chevron-right" size={20} color={colors.muted} />
+              </Pressable>
+            </Animated.View>
+          ))}
         </View>
 
         <View style={s.section}>
@@ -150,6 +172,8 @@ const useStyles = makeStyles((c) => ({
   gridWide: { width: "100%" },
   gridHalf: { flexBasis: "47%", flexGrow: 1 },
   quick: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg, borderRadius: radius.md, backgroundColor: c.brandTertiary, borderWidth: 1, borderColor: c.borderStrong, minHeight: 72 },
+  tool: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.md, backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.borderStrong, minHeight: 68 },
+  toolIcon: { width: 44, height: 44, borderRadius: radius.md, backgroundColor: c.brandPrimary, alignItems: "center", justifyContent: "center" },
   quickTitle: { color: c.onBrandTertiary, fontFamily: fonts.display, fontSize: 19 },
   quickCount: { color: c.muted, fontFamily: fonts.text, fontSize: 11 },
   newsRow: { flexDirection: "row", gap: spacing.md, alignItems: "center", paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: c.border },

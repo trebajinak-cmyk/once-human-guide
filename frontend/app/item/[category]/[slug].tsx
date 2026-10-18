@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, Share, Text, View } from "react-native";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
@@ -26,6 +28,25 @@ export default function ItemDetail() {
   const payload = it ? { summary: it.summary, features: it.features, set_effects: it.set_effects, sections: it.sections } : undefined;
   const tr = useTranslated(`item:${category}:${slug}:${it?.wiki_updated ?? ""}`, payload, !!it);
   const [open, setOpen] = useState<number | null>(0);
+  const [sharing, setSharing] = useState(false);
+  const cardRef = useRef<View>(null);
+
+  const shareCard = async () => {
+    if (!it) return;
+    setSharing(true);
+    try {
+      if (Platform.OS !== "web" && (await Sharing.isAvailableAsync())) {
+        const uri = await captureRef(cardRef, { format: "png", quality: 0.95 });
+        await Sharing.shareAsync(uri, { mimeType: "image/png", dialogTitle: it.title });
+      } else {
+        await Share.share({ message: `${it.title} (${it.rarity}) – ${it.wiki_url}` });
+      }
+    } catch {
+      await Share.share({ message: `${it.title} – ${it.wiki_url}` }).catch(() => {});
+    } finally {
+      setSharing(false);
+    }
+  };
 
   if (q.isLoading) return <View style={s.root}><Loading /></View>;
   if (q.isError || !it) return <View style={[s.root, { paddingTop: insets.top }]}><ErrorState onRetry={() => q.refetch()} testID="item-error" /></View>;
@@ -42,13 +63,24 @@ export default function ItemDetail() {
           <Pressable testID="item-back-button" onPress={() => (router.canGoBack() ? router.back() : router.replace("/codex"))} style={s.roundBtn} hitSlop={8}>
             <Icon name="chevron-left" size={26} color={colors.brandPrimary} />
           </Pressable>
+          <View style={s.topRight}>
+          <Pressable testID="item-share-button" onPress={shareCard} style={s.roundBtn} hitSlop={8}>
+            {sharing ? <ActivityIndicator color={colors.brandPrimary} /> : <Icon name="share-variant" size={20} color={colors.brandPrimary} />}
+          </Pressable>
+          {it.category === "weapons" ? (
+            <Pressable testID="item-compare-button" onPress={() => router.push({ pathname: "/compare", params: { a: it.slug } })} style={s.roundBtn} hitSlop={8}>
+              <Icon name="scale-balance" size={20} color={colors.brandPrimary} />
+            </Pressable>
+          ) : null}
           <Pressable testID="item-ask-ai-button" onPress={() => router.push({ pathname: "/assistant", params: { q: lang === "cs" ? `Vysvětli ${it.title} – jak funguje, jaký build a kde ho získat?` : `Explain ${it.title} – how it works, best build and where to get it?` } })} style={s.aiBtn}>
             <Icon name="creation" size={16} color={colors.onBrandPrimary} />
             <Text style={s.aiBtnText}>{t("askAi")}</Text>
           </Pressable>
+          </View>
         </View>
 
         {/* Ornate card frame */}
+        <View ref={cardRef} collapsable={false} style={s.shot}>
         <Animated.View entering={FadeInUp.duration(450)} style={s.frameOuter}>
           <View style={s.frameInner}>
             <Corner pos="tl" /><Corner pos="tr" /><Corner pos="bl" /><Corner pos="br" />
@@ -152,6 +184,7 @@ export default function ItemDetail() {
             <View style={s.bottomOrn}><View style={s.ornDiamond} /></View>
           </View>
         </Animated.View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -166,6 +199,8 @@ function Corner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
 const useStyles = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: c.surface },
   abs: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  topRight: { flexDirection: "row", gap: spacing.sm, alignItems: "center" },
+  shot: { backgroundColor: c.surface },
   topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
   roundBtn: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: c.surfaceSecondary, borderWidth: 1, borderColor: c.borderStrong },
   aiBtn: { flexDirection: "row", alignItems: "center", gap: spacing.xs, backgroundColor: c.brandPrimary, paddingHorizontal: spacing.lg, minHeight: 44, borderRadius: radius.pill },

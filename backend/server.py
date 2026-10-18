@@ -22,6 +22,7 @@ load_dotenv(ROOT_DIR / '.env')
 
 import wiki  # noqa: E402
 import feeds  # noqa: E402
+import builds  # noqa: E402
 from guides_data import GUIDES, GROUPS  # noqa: E402
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone  # noqa: E402
 
@@ -394,6 +395,100 @@ async def bridge_ask(body: BridgeAsk, x_bridge_token: Optional[str] = Header(Non
                    system_message=system_prompt(body.lang)).with_model(*MODEL)
     answer = await chat.send_message(UserMessage(text=f"CONTEXT (verified, live):\n{ctx}\n\nQUESTION:\n{body.question}"))
     return {"answer": answer, "sources": sources}
+
+
+# ---------------------------------------------------------------- build planner + map
+class BuildGenIn(BaseModel):
+    goal: str = ""
+    keyword: str = ""
+    lang: str = "cs"
+
+
+class BuildReviewIn(BaseModel):
+    build: dict
+    lang: str = "cs"
+
+
+@api.get("/builds/creators")
+async def build_creators():
+    vids = await cached("creator_videos", 24 * 60, builds.creator_knowledge)
+    return [{k: v for k, v in x.items() if k != "description"} for x in vids]
+
+
+async def _valid_slugs():
+    out = {}
+    async for d in db.items.find({}, {"_id": 0, "slug": 1, "category": 1, "title": 1, "image": 1, "rarity": 1, "subtype": 1}):
+        out.setdefault(d["slug"], d)
+    return out
+
+
+def _ref(slugs, s):
+    return slugs.get(s) if isinstance(s, str) else None
+
+
+@api.post("/builds/generate")
+async def build_generate(body: BuildGenIn):
+    vids = await cached("creator_videos", 24 * 60, builds.creator_knowledge)
+    cat = await builds.catalog(db)
+    lng = "Czech" if body.lang == "cs" else "English"
+    ctx = {"creator_videos": [{"video_id": v["video_id"], "channel": v["channel"], "title": v["title"],
+                               "published": v["published"], "description": v.get("description", "")[:900]} for v in vids],
+           "CATALOG": cat}
+    chat = LlmChat(api_key=LLM_KEY, session_id=f"build-{uuid.uuid4()}",
+                   system_message=builds.METHODOLOGY + f"\nWrite all free text in {lng}; keep item names in English. "
+                   + builds.build_schema()).with_model(*MODEL)
+    req = f"Goal: {body.goal or 'strong all-round PvE endgame build'}. Main keyword: {body.keyword or 'choose the best'}."
+    raw = await chat.send_message(UserMessage(text=f"CONTEXT:\n{json.dumps(ctx, ensure_ascii=False)}\n\nREQUEST: {req}"))
+    try:
+        b = builds.extract_json(raw)
+    except json.JSONDecodeError:
+        b = None
+    if not b:
+        raise HTTPException(502, "AI returned an invalid build")
+    slugs = await _valid_slugs()
+    vid_ids = {v["video_id"]: v for v in vids}
+    return {
+        "name": b.get("name", "AI build"), "keyword": b.get("keyword", body.keyword), "playstyle": b.get("playstyle", ""),
+        "summary": b.get("summary", ""), "weapon": _ref(slugs, b.get("weapon")),
+        "armor": {s: _ref(slugs, (b.get("armor") or {}).get(s)) for s in builds.SLOTS},
+        "weapon_mod": _ref(slugs, b.get("weapon_mod")),
+        "armor_mods": {s: _ref(slugs, (b.get("armor_mods") or {}).get(s)) for s in builds.SLOTS},
+        "deviation": _ref(slugs, b.get("deviation")), "calibration": b.get("calibration", ""),
+        "substats": b.get("substats", []), "rotation": b.get("rotation", []), "tips": b.get("tips", []),
+        "creator_refs": [{**r, "thumbnail": f"https://i.ytimg.com/vi/{r['video_id']}/hqdefault.jpg"}
+                         for r in b.get("creator_refs", []) if r.get("video_id") in vid_ids],
+    }
+
+
+@api.post("/builds/review")
+async def build_review(body: BuildReviewIn):
+    vids = await cached("creator_videos", 24 * 60, builds.creator_knowledge)
+    details = await db.items.find({"slug": {"$in": _collect_slugs(body.build)}},
+                                  {"_id": 0, "title": 1, "category": 1, "subtype": 1, "features": 1, "set_effects": 1, "stats": 1}).to_list(30)
+    lng = "Czech" if body.lang == "cs" else "English"
+    chat = LlmChat(api_key=LLM_KEY, session_id=f"review-{uuid.uuid4()}",
+                   system_message=builds.METHODOLOGY + f"\nNow REVIEW the user's build in {lng} (markdown, concise): rating /10, "
+                   "what synergises, what is wrong, concrete swaps from the catalog, active set bonuses, and which creator video to watch.").with_model(*MODEL)
+    ctx = {"user_build_items": details, "creator_videos": [{"title": v["title"], "channel": v["channel"], "description": v.get("description", "")[:600]} for v in vids[:12]]}
+    text = await chat.send_message(UserMessage(text=f"CONTEXT:\n{json.dumps(ctx, ensure_ascii=False)}\n\nBUILD: {json.dumps([d['title'] for d in details])}"))
+    return {"review": text}
+
+
+def _collect_slugs(b: dict):
+    out = []
+    for k in ("weapon", "weapon_mod", "deviation"):
+        if isinstance(b.get(k), dict) and b[k].get("slug"):
+            out.append(b[k]["slug"])
+    for k in ("armor", "armor_mods"):
+        for v in (b.get(k) or {}).values():
+            if isinstance(v, dict) and v.get("slug"):
+                out.append(v["slug"])
+    return out
+
+
+@api.get("/map")
+async def map_endpoint():
+    return await cached("map_nalcott", 12 * 60, builds.map_data)
 
 
 app.include_router(api)
