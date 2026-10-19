@@ -1,7 +1,7 @@
 # Once Human Guide
 
 Adaptive game companion for **Once Human**  
-**App 5.3.0** · Shell **v19** · Data `2026-10-01-v19-372` · Patch **3.0.7** · 372 entit
+**App 5.5.0** · Shell **v19.2** · Data `2026-10-09-v19.2-372` · Patch **3.0.7** · 372 entit · SW `ohg-v19.2-307`
 
 **Repo:** https://github.com/smus-rgb/once-human-guide
 
@@ -27,7 +27,6 @@ python install_gui.py
 ```
 
 Click **START** — downloads everything, builds DB, optionally launches the app.
-
 
 Needs only **Python 3.10+**.
 
@@ -87,3 +86,4 @@ Open `once_human_guide_v19.html` (needs `modules/`, `ohg_data.js`, `ohg_sw.js` v
 | http://127.0.0.1:8000/docs | OpenAPI |
 | http://127.0.0.1:8000/stats | Counts |
 | http://127.0.0.1:8000/update/check | Update check (shell + data) |
+| http://127.0.0.1:8000/audit | Data quality issues |

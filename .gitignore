@@ -5,4 +5,6 @@ dist/
 *.pyc
 __pycache__/
 .env
+.admin_token
 once_human.db
+.ohg_backup/

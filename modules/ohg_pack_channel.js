@@ -57,7 +57,7 @@ function rejectQueue(id){
   render();
 }
 const _viewAgent=viewAgent;
-function viewAgent(){
+viewAgent=function(){
   const base=_viewAgent();
   const extra=(user.queue||[]).filter(q=>q.type==='pack-diff').map(q=>`
     <div class="item"><div><b>${q.title||q.id}</b><div class="muted">${q.status} · ${(q.diffs||[]).map(d=>d.field+': '+d.local+' → '+d.remote).join(', ')}</div></div>

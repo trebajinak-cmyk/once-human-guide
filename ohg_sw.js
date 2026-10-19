@@ -1,5 +1,5 @@
 /* Once Human Guide v19 — cache thin host + modules + pack */
-const CACHE = 'ohg-v19.2-307';
+const CACHE = 'ohg-2026-10-09-v19.2-372';
 const PRECACHE = [
   './once_human_guide_v19.html',
   './once_human_guide_v18.html',
@@ -11,7 +11,8 @@ const PRECACHE = [
   './modules/ohg_builds.js',
   './modules/ohg_pack_channel.js',
   './modules/ohg_links.js',
-  './modules/ohg_quality.js'
+  './modules/ohg_quality.js',
+  './modules/ohg_selfheal.js'
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

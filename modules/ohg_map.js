@@ -21,7 +21,7 @@ function viewMap(){
     <div class="mapbox">${tiles}${shown.map(l=>{
       const x=Math.max(6,Math.min(94,Number(l.x)||((String(l.id||l.name).length*17)%88+6)));
       const y=Math.max(8,Math.min(92,Number(l.y)||((String(l.name||'').length*13)%80+10)));
-      return `<span class="pin" style="left:${x}%;top:${y}%" title="${l.name}" onclick='openEntity(${JSON.stringify(l).replace(/'/g,"&#39;")})'>📍</span>`;
+      return `<button class="pin" style="left:${x}%;top:${y}%" title="${l.name}" aria-label="${l.name}" onclick='openEntity(${JSON.stringify(l).replace(/'/g,"&#39;")})'>📍</button>`;
     }).join('')}</div>
     ${device==='desktop'||device==='ultrawide'?'':`<div class="list" style="margin-top:12px">${shown.slice(0,24).map(itemRow).join('')}</div>`}`;
 }

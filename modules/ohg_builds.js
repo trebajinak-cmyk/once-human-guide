@@ -29,9 +29,9 @@ function exportBuildJSON(){
   a.click();
   toast(issues.length?('Export s '+issues.length+' varováními'):'Build JSON exportován');
 }
-function viewBuilds(){
+viewBuilds = function(){
   const html=_viewBuilds();
   const issues=slotIssues(user.currentBuild||{});
   const warn=issues.length?`<p class="sub" style="color:var(--warn)">${issues.join(' · ')}</p>`:'<p class="sub">Sloty sedí na pack.</p>';
   return html+warn+`<div class="row" style="margin-top:8px"><button class="btn" onclick="exportBuildJSON()">Export build JSON</button></div>`;
-}
+};

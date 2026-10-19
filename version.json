@@ -5,7 +5,7 @@
   "released_at": "2026-10-09T14:00:00Z",
   "min_app_version": "5.0.0",
   "patch_target": "3.0.7",
-  "records": 372,
+  "records": 373,
   "sw_cache": "ohg-v19.2-307",
   "files": {
     "database_full.json": "data",
@@ -21,14 +21,22 @@
     "ohg_sw.js": "sw",
     "api_main.py": "api",
     "version.json": "meta",
-    "modules/ohg_quality.js": "module"
+    "modules/ohg_quality.js": "module",
+    "regen_pack.py": "tool",
+    "modules/ohg_selfheal.js": "module",
+    "pytest.ini": "test",
+    "tests/test_api.py": "test"
   },
-  "notes": "v19.2: SQLite audit (data_issues), bezpečné FTS, panel kvality. Pack 372 beze změny. User layer nemění pack.",
+  "notes": "v19.2: audit/FTS/quality + selfheal + green CI. Pack OHG_META.version == data_version. User layer nemění pack.",
   "changelog": [
     "db_build writes data_issues (missing id, duplicate id, empty name, unresolved ingredients)",
     "API /audit and stats.issues; FTS query strips special characters",
     "SPA quality card on Home/Database/Settings when API is online",
-    "version.json is the API version source"
+    "version.json is the API version source",
+    "Pack regenerate: OHG_META.version == version.json data_version (2026-10-09-v19.2-372)",
+    "records 373 (weapons 39 on main modules)",
+    "PR#19: selfheal, quality/links fix, /version.json, phone layout, pytest",
+    "CI: regen_pack.py auto-commit on main + flake8/pytest/shell syntax"
   ],
   "github": {
     "owner": "smus-rgb",
