@@ -116,6 +116,23 @@ const STR = {
   creatorsNote: { cs: "AI se učí z popisů a časových os nejnovějších videí Anestic a Doomeris a používá jen ověřené položky z wiki.", en: "The AI learns from the descriptions & timestamps of the latest Anestic and Doomeris videos and uses only verified wiki items." },
   mapNote: { cs: "Mapa Nalcott Island z Once Human Wiki. Přibliž dvěma prsty, klepni na značku.", en: "Nalcott Island map from the Once Human Wiki. Pinch to zoom, tap a marker." },
   askAboutPlace: { cs: "Zeptat se AI na místo", en: "Ask the AI about it" },
+  creatorsKb: { cs: "Znalosti tvůrců", en: "Creator knowledge" },
+  creatorsKbSub: { cs: "Všechna videa Anestic & Doomeris rozebraná AI", en: "Every Anestic & Doomeris video analysed by AI" },
+  analyzedVideos: { cs: "videí rozebráno", en: "videos analysed" },
+  noGeminiKey: { cs: "Chybí Gemini API klíč – zatím jen názvy a popisy videí", en: "Gemini API key missing – titles & descriptions only" },
+  kbPaused: { cs: "Denní limit Gemini vyčerpán – pokračuje automaticky", en: "Gemini daily limit reached – resumes automatically" },
+  kbRunning: { cs: "AI průběžně sleduje a rozebírá videa, nová se přidávají automaticky", en: "AI keeps watching videos; new ones are added automatically" },
+  kbSearch: { cs: "Hledat v obsahu videí…", en: "Search video knowledge…" },
+  onlyAnalyzed: { cs: "Jen rozebraná", en: "Analysed only" },
+  analyzedBadge: { cs: "Rozebráno AI", en: "AI analysed" },
+  queuedBadge: { cs: "Ve frontě na rozbor", en: "Queued for analysis" },
+  notAnalyzedYet: { cs: "AI toto video ještě nezhlédla. Zatím se používá jen popis a časová osa.", en: "The AI hasn't watched this video yet. Only description & timestamps are used so far." },
+  summary: { cs: "Shrnutí", en: "Summary" },
+  mechanicsT: { cs: "Mechaniky", en: "Mechanics" },
+  keyFacts: { cs: "Klíčová fakta (klepni = přehraj od času)", en: "Key facts (tap = play from time)" },
+  opinionsT: { cs: "Názory tvůrce", en: "Creator opinions" },
+  descriptionT: { cs: "Popis videa", en: "Video description" },
+  creatorsSay: { cs: "Co říkají Anestic & Doomeris", en: "What Anestic & Doomeris say" },
 } as const;
 
 export type StrKey = keyof typeof STR;

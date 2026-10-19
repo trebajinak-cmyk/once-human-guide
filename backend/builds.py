@@ -78,9 +78,13 @@ def build_schema():
             'For an armor slot you may use either a piece of that slot type or an "Armor Set" slug (meaning a piece of that set).')
 
 
-async def map_data():
+MAPS = {"nalcott": ("Map:Nalcott", "Nalcott Island"), "main": ("Map:OnceHuman", "Once Human – Main World")}
+
+
+async def map_data(region: str = "nalcott"):
+    page, fallback_title = MAPS[region]
     async with httpx.AsyncClient(headers=wiki.UA, timeout=40) as c:
-        r = await c.get(wiki.API, params={"action": "parse", "page": "Map:Nalcott", "prop": "wikitext", "format": "json"})
+        r = await c.get(wiki.API, params={"action": "parse", "page": page, "prop": "wikitext", "format": "json"})
         m = json.loads(r.json()["parse"]["wikitext"]["*"])
         files = {m["mapImage"]} | {cat["icon"].replace("File:", "") for cat in m["categories"] if cat.get("icon")}
         files |= {mk["popup"]["image"].replace("File:", "") for mk in m["markers"] if mk.get("popup", {}).get("image")}
@@ -114,5 +118,5 @@ async def map_data():
             "wiki_url": f"{wiki.WIKI}/wiki/{quote(link.replace(' ', '_'))}" if link else "",
             "coords": f"{int(px)}, {int(py)}",
         })
-    return {"title": m.get("description", "Nalcott"), "image": img, "categories": [c for c in cats.values() if c["count"]],
-            "markers": markers, "source": f"{wiki.WIKI}/wiki/Map:Nalcott"}
+    return {"region": region, "title": m.get("description") or fallback_title, "image": img, "categories": [c for c in cats.values() if c["count"]],
+            "markers": markers, "source": f"{wiki.WIKI}/wiki/{page}"}

@@ -18,6 +18,7 @@ const CATS = ["weapons", "armor", "deviations", "weapon_mods", "armor_mods"] as 
 
 const TOOLS = [
   { key: "builds", sub: "buildsSub", href: "/builds", icon: "hammer-wrench" },
+  { key: "creatorsKb", sub: "creatorsKbSub", href: "/creators", icon: "youtube" },
   { key: "compare", sub: "compareSub", href: "/compare", icon: "scale-balance" },
   { key: "map", sub: "mapSub", href: "/map", icon: "map-marker-radius-outline" },
 ] as const;

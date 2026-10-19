@@ -23,6 +23,7 @@ load_dotenv(ROOT_DIR / '.env')
 import wiki  # noqa: E402
 import feeds  # noqa: E402
 import builds  # noqa: E402
+import creators  # noqa: E402
 from guides_data import GUIDES, GROUPS  # noqa: E402
 from emergentintegrations.llm.chat import LlmChat, UserMessage, TextDelta, StreamDone  # noqa: E402
 
@@ -272,14 +273,21 @@ async def build_context(question: str):
         news_items = [{"title": n["title"], "date": n["date"][:10], "excerpt": n["excerpt"][:200]} for n in (await _news())[:6]]
     except Exception:
         pass
+    creator = []
+    try:
+        creator = await creators.search_kb(db, words, 3)
+    except Exception as e:
+        logger.warning("creator kb failed %s", e)
     sources = [{"title": x["title"], "url": x["url"]} for x in local] + [{"title": x["title"], "url": x["url"]} for x in web]
+    sources += [{"title": f"{x['channel']}: {x['title']}", "url": x["video"]} for x in creator]
     seen, uniq = set(), []
     for s in sources:
         if s["url"] not in seen:
             seen.add(s["url"]); uniq.append(s)
-    ctx = json.dumps({"database_items": local, "wiki_live_search": web, "latest_official_news": news_items},
+    ctx = json.dumps({"database_items": local, "wiki_live_search": web, "latest_official_news": news_items,
+                      "creator_knowledge_anestic_doomeris": creator},
                      ensure_ascii=False)
-    return ctx, uniq[:6]
+    return ctx, uniq[:8]
 
 
 def system_prompt(lang: str):
@@ -434,6 +442,8 @@ async def build_generate(body: BuildGenIn):
     ctx = {"creator_videos": [{"video_id": v["video_id"], "channel": v["channel"], "title": v["title"],
                                "published": v["published"], "description": v.get("description", "")[:900]} for v in vids],
            "CATALOG": cat}
+    kw_words = [w for w in re.findall(r"[\w\.\-]{3,}", f"{body.keyword} {body.goal}".lower()) if w not in STOP][:6]
+    ctx["creator_video_analyses"] = await creators.search_kb(db, kw_words or ["build"], 5)
     chat = LlmChat(api_key=LLM_KEY, session_id=f"build-{uuid.uuid4()}",
                    system_message=builds.METHODOLOGY + f"\nWrite all free text in {lng}; keep item names in English. "
                    + builds.build_schema()).with_model(*MODEL)
@@ -486,9 +496,207 @@ def _collect_slugs(b: dict):
     return out
 
 
+# ---------------------------------------------------------------- creator knowledge base
+
+
+@api.get("/creators/status")
+async def creators_status():
+    meta = await db.meta.find_one({"_id": "creators"}, {"_id": 0}) or {}
+    out = {"has_gemini_key": bool(os.environ.get("GEMINI_API_KEY", "").strip()), **meta, "channels": {}}
+    for ch in creators.CHANNELS.values():
+        base = {"channel": ch, "is_once_human": True}
+        out["channels"][ch] = {
+            "once_human_videos": await db.creator_videos.count_documents(base),
+            "analyzed": await db.creator_videos.count_documents({**base, "status": "analyzed"}),
+            "pending": await db.creator_videos.count_documents({**base, "status": "described"}),
+            "failed": await db.creator_videos.count_documents({**base, "status": "failed"}),
+        }
+    return out
+
+
+@api.post("/creators/scan")
+async def creators_scan():
+    asyncio.create_task(creators.scan_channels(db))
+    return {"started": True}
+
+
+@api.post("/creators/retry-failed")
+async def creators_retry():
+    r = await db.creator_videos.update_many({"status": "failed"}, {"$set": {"status": "described"}})
+    return {"requeued": r.modified_count}
+
+
+@api.get("/creators/videos")
+async def creators_videos(channel: Optional[str] = None, q: Optional[str] = None, analyzed: bool = False,
+                          limit: int = Query(40, le=200), skip: int = 0):
+    f: dict = {"is_once_human": True}
+    if channel:
+        f["channel"] = channel
+    if analyzed:
+        f["status"] = "analyzed"
+    if q:
+        f["search"] = {"$regex": re.escape(q.lower())}
+    docs = await db.creator_videos.find(f, {"_id": 0, "description": 0, "search": 0}).sort("order", 1).skip(skip).to_list(limit)
+    for d in docs:
+        a = d.pop("analysis", None) or {}
+        d["summary"] = a.get("summary", "")
+        d["topics"] = a.get("topics", [])
+    total = await db.creator_videos.count_documents(f)
+    return {"total": total, "items": docs}
+
+
+@api.get("/creators/videos/{video_id}")
+async def creators_video(video_id: str):
+    d = await db.creator_videos.find_one({"video_id": video_id}, {"_id": 0, "search": 0})
+    if not d:
+        raise HTTPException(404, "Video not found")
+    return d
+
+
+@api.get("/creators/search")
+async def creators_search(q: str, limit: int = 4):
+    words = [w for w in re.findall(r"[\w\.\-]{3,}", q.lower()) if w not in STOP][:8]
+    return await creators.search_kb(db, words, limit)
+
+
+@api.get("/maps")
+async def maps_list():
+    return [{"id": k, "title": v[1]} for k, v in builds.MAPS.items()]
+
+
 @api.get("/map")
-async def map_endpoint():
-    return await cached("map_nalcott", 12 * 60, builds.map_data)
+async def map_endpoint(region: str = "nalcott"):
+    if region not in builds.MAPS:
+        raise HTTPException(404, "Unknown map")
+    return await cached(f"map_{region}", 12 * 60, lambda: builds.map_data(region))
+
+
+# ---------------------------------------------------------------- community leaderboard
+class CommunityBuildIn(BaseModel):
+    device_id: str
+    author: str = "Anonym"
+    build: dict
+
+
+class VoteIn(BaseModel):
+    device_id: str
+    stars: int = Field(ge=1, le=5)
+
+
+class CommunityBuild(BaseDocument):
+    author: str
+    device_id: str
+    name: str
+    keyword: str = ""
+    weapon_title: str = ""
+    build: dict
+    rating_sum: int = 0
+    rating_count: int = 0
+    rating: float = 0
+    copies: int = 0
+    score: float = 0
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+def _public_build(d):
+    m = CommunityBuild.from_mongo(d).model_dump()
+    m.pop("device_id", None)
+    return m
+
+
+@api.post("/community/builds")
+async def community_publish(body: CommunityBuildIn):
+    b = {k: body.build.get(k) for k in ("name", "keyword", "weapon", "weapon_mod", "armor", "armor_mods", "deviation", "notes", "ai")}
+    if not (b.get("weapon") or {}).get("slug"):
+        raise HTTPException(400, "Build needs a weapon")
+    name = (b.get("name") or b["weapon"].get("title") or "Build")[:80]
+    existing = await db.community_builds.find_one({"device_id": body.device_id, "build.id": body.build.get("id")})
+    if existing:
+        await db.community_builds.update_one({"_id": existing["_id"]}, {"$set": {"build": {**b, "id": body.build.get("id")}, "name": name, "author": body.author[:40], "keyword": b.get("keyword") or ""}})
+        return _public_build(await db.community_builds.find_one({"_id": existing["_id"]}))
+    doc = CommunityBuild(author=body.author[:40] or "Anonym", device_id=body.device_id, name=name, keyword=b.get("keyword") or "",
+                         weapon_title=b["weapon"].get("title", ""), build={**b, "id": body.build.get("id")})
+    r = await db.community_builds.insert_one(doc.to_mongo())
+    return _public_build(await db.community_builds.find_one({"_id": r.inserted_id}))
+
+
+@api.get("/community/builds")
+async def community_list(sort: str = "top", keyword: Optional[str] = None, limit: int = Query(50, le=100)):
+    f = {"keyword": {"$regex": re.escape(keyword), "$options": "i"}} if keyword else {}
+    order = [("score", -1), ("rating_count", -1)] if sort == "top" else [("copies", -1)] if sort == "copied" else [("created_at", -1)]
+    return [_public_build(d) for d in await db.community_builds.find(f).sort(order).to_list(limit)]
+
+
+def _score(rs, rc, copies):
+    # Bayesian average (prior 3.0 with weight 3) + small bonus for copies
+    return round((rs + 9) / (rc + 3) + min(copies, 100) * 0.01, 4)
+
+
+@api.post("/community/builds/{bid}/vote")
+async def community_vote(bid: str, body: VoteIn):
+    if not ObjectId.is_valid(bid):
+        raise HTTPException(404, "Build not found")
+    d = await db.community_builds.find_one({"_id": ObjectId(bid)})
+    if not d:
+        raise HTTPException(404, "Build not found")
+    prev = await db.community_votes.find_one({"build_id": bid, "device_id": body.device_id})
+    delta_sum = body.stars - (prev["stars"] if prev else 0)
+    delta_cnt = 0 if prev else 1
+    await db.community_votes.update_one({"build_id": bid, "device_id": body.device_id}, {"$set": {"stars": body.stars}}, upsert=True)
+    rs, rc = d["rating_sum"] + delta_sum, d["rating_count"] + delta_cnt
+    await db.community_builds.update_one({"_id": d["_id"]}, {"$set": {"rating_sum": rs, "rating_count": rc, "rating": round(rs / rc, 2), "score": _score(rs, rc, d["copies"])}})
+    return _public_build(await db.community_builds.find_one({"_id": d["_id"]}))
+
+
+@api.post("/community/builds/{bid}/copy")
+async def community_copy(bid: str):
+    if not ObjectId.is_valid(bid):
+        raise HTTPException(404, "Build not found")
+    d = await db.community_builds.find_one({"_id": ObjectId(bid)})
+    if not d:
+        raise HTTPException(404, "Build not found")
+    c = d["copies"] + 1
+    await db.community_builds.update_one({"_id": d["_id"]}, {"$set": {"copies": c, "score": _score(d["rating_sum"], d["rating_count"], c)}})
+    return {"build": d["build"], "copies": c}
+
+
+# ---------------------------------------------------------------- patch impact on saved builds
+class ImpactIn(BaseModel):
+    builds: List[dict]
+    patches: int = 3
+
+
+def _name_variants(title: str):
+    t = title.strip()
+    out = {t.lower()}
+    if " - " in t:
+        suffix = t.split(" - ", 1)[1]
+        out.add(suffix.lower())
+        if suffix.lower().startswith("the "):
+            out.add(suffix[4:].lower())
+    return [v for v in out if len(v) >= 4]
+
+
+@api.post("/patch/impact")
+async def patch_impact(body: ImpactIn):
+    patches = [n for n in await _news() if n["is_patch"]][: body.patches]
+    texts = [(n, " \n ".join(b["value"] for b in n["blocks"] if b["type"] != "img")) for n in patches]
+    out = []
+    for b in body.builds:
+        items = [x for x in (b.get("items") or []) if x]
+        hits = []
+        for n, txt in texts:
+            low = txt.lower()
+            for title in set(items):
+                for v in _name_variants(title):
+                    i = low.find(v)
+                    if i >= 0:
+                        snip = txt[max(0, i - 90): i + len(v) + 140].replace("\n", " ").strip()
+                        hits.append({"item": title, "gid": n["gid"], "patch": n["title"], "date": n["date"], "snippet": snip})
+                        break
+        if hits:
+            out.append({"build_id": b.get("id"), "name": b.get("name"), "hits": hits})
+    return {"patches": [{"gid": n["gid"], "title": n["title"], "date": n["date"]} for n in patches], "impacted": out}
 
 
 app.include_router(api)
@@ -499,7 +707,12 @@ app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=["*"], 
 async def startup():
     await db.items.create_index([("category", 1), ("slug", 1)], unique=True)
     await db.chat_messages.create_index([("session_id", 1), ("created_at", 1)])
+    await db.creator_videos.create_index("video_id", unique=True)
+    await db.community_builds.create_index([("score", -1)])
+    await db.community_votes.create_index([("build_id", 1), ("device_id", 1)], unique=True)
+    await db.creator_videos.create_index([("status", 1), ("order", 1)])
     asyncio.create_task(wiki.periodic_sync(db, 6))
+    asyncio.create_task(creators.worker(db))
 
 
 @app.on_event("shutdown")

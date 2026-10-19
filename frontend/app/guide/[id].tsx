@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -59,6 +59,7 @@ export default function GuideScreen() {
           ) : null}
 
           {g.articles.map((a) => <Article key={a.title} gid={g.id} article={a} />)}
+          <CreatorsSay q={g.yt.replace(/^Once Human\s*/i, "").replace(/\b(guide|build|tips|explained|best)\b/gi, "").trim() || g.title.en} />
         </ScrollView>
       )}
     </View>
@@ -95,6 +96,35 @@ function Article({ gid, article }: { gid: string; article: GuideDetail["articles
         <Icon name="open-in-new" size={16} color={colors.brandPrimary} />
         <Text style={s.wikiText}>{t("openWiki")}</Text>
       </Pressable>
+    </View>
+  );
+}
+
+function CreatorsSay({ q }: { q: string }) {
+  const { colors } = useTheme();
+  const { t } = useLang();
+  const s = useStyles();
+  const r = useQuery({
+    queryKey: ["creators-search", q],
+    queryFn: () => get<{ video: string; channel: string; title: string; published: string; analysis: { summary?: string } | null; description: string }[]>(`/creators/search?q=${encodeURIComponent(q)}&limit=4`),
+  });
+  if (!r.data?.length) return null;
+  return (
+    <View style={s.article} testID="guide-creators-say">
+      <View style={s.artHead}>
+        <Icon name="youtube" size={16} color={colors.brandSecondary} />
+        <Text style={s.label}>{t("creatorsSay")}</Text>
+      </View>
+      {r.data.map((v) => {
+        const id = v.video.split("v=")[1];
+        return (
+          <Pressable key={v.video} testID={`guide-creator-${id}`} onPress={() => router.push({ pathname: "/creators/[id]", params: { id } })} style={{ gap: 2 }}>
+            <Text style={s.secTitle}>{v.title}</Text>
+            <Text style={s.vmeta}>{v.channel} · {v.published}{v.analysis ? " · AI ✓" : ""}</Text>
+            <Text style={s.secText} numberOfLines={4}>{v.analysis?.summary || v.description}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
